@@ -1,0 +1,3 @@
+2026-06-29T23:36:55 [gamr.runtime        ] INFO    GAMR Week 1 — Local test run
+2026-06-29T23:36:56 [gamr.hardware       ] INFO    Hardware scan complete — GPU: NVIDIA GeForce RTX 3050 6GB Laptop GPU | CUDA: True | VRAM: 6.0 GB | RAM: 15.3 GB
+2026-06-29T23:36:56 [gamr.hardware       ] INFO    hardware.json saved → runs/Run_001/hardware.json

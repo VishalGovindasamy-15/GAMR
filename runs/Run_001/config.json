@@ -1,0 +1,13 @@
+{
+  "model_path": "/app/models/TinyLlama-1.1B",
+  "block_granularity": "layer",
+  "pool": {
+    "ram_budget": "25%",
+    "vram_budget": "80%"
+  },
+  "scheduler": "fifo",
+  "prefetch_depth": 1,
+  "validate_output": true,
+  "output_dir": "./runs",
+  "log_level": "INFO"
+}
