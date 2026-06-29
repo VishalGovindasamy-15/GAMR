@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  gamr:
+    build: .
+    container_name: gamr_runtime
+    volumes:
+      - ./runs:/app/runs
+      - ./configs:/app/configs
+      - ./models:/app/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: "no"

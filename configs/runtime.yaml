@@ -1,0 +1,11 @@
+runtime:
+  model_path: /app/models/TinyLlama-1.1B
+  block_granularity: layer        # one transformer layer = one MemoryObject
+  pool:
+    ram_budget: "25%"             # percentage of free RAM at startup
+    vram_budget: "80%"            # percentage of free VRAM at startup
+  scheduler: fifo                 # fifo | static_prefetch | adaptive
+  prefetch_depth: 1
+  validate: true                  # compare output against HF reference
+  output_dir: /app/runs
+  log_level: INFO                 # DEBUG | INFO | WARNING | ERROR

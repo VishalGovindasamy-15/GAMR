@@ -1,0 +1,11 @@
+scheduler:
+  active: fifo                    # fifo | static_prefetch | adaptive
+  fifo:
+    queue_depth: 32
+  static_prefetch:
+    prefetch_depth: 2             # load N layers ahead
+  adaptive:
+    initial_prefetch_depth: 1
+    max_prefetch_depth: 8
+    adapt_interval_seconds: 5.0   # how often to evaluate and possibly change
+    rollback_threshold: 0.05      # rollback if metric worsens by more than 5%

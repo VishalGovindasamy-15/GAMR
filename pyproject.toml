@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gamr"
+version = "0.1.0"
+description = "Galaxy Adaptive Memory Runtime — Adaptive Hierarchical AI Memory Manager"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.3.0",
+    "transformers>=4.41.0",
+    "safetensors>=0.4.3",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.3.0",
+    "pyyaml>=6.0.1",
+    "psutil>=5.9.8",
+    "nvidia-ml-py>=12.535.108",
+    "orjson>=3.10.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.7",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["runtime*", "validation*", "recorder*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

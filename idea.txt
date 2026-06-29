@@ -1,0 +1,1213 @@
+I think the project has evolved a lot from where it started. Originally, it was inspired by GTA 6's asset streaming. Now it's become something much broader.
+
+One important distinction before I summarize it:
+
+* **The core runtime idea is technically plausible.**
+* **Some of the future capabilities (such as automatically improving training accuracy or outperforming all existing systems) are still hypotheses that would need experimental validation.**
+
+With that in mind, here's how I would define the project today.
+
+---
+
+# Project Name (Current Vision)
+
+**GAMR (Galaxy Adaptive Memory Runtime)**
+
+or
+
+**HAMR (Hierarchical Adaptive Memory Runtime)**
+
+I now think the project is no longer just an LLM runtime.
+
+It is becoming an **Adaptive Hierarchical AI Memory Manager (AHAMM)**.
+
+---
+
+# Core Vision
+
+Instead of assuming all model weights live permanently in GPU memory, the runtime treats the entire computer as one intelligent memory hierarchy.
+
+```text
+                AI Model
+                    │
+                    ▼
+      Adaptive Hierarchical Memory Manager
+                    │
+    ┌───────────────┼───────────────┐
+    │               │               │
+    ▼               ▼               ▼
+   SSD             RAM             VRAM
+    │               │               │
+    └───────────────┼───────────────┘
+                    │
+                    ▼
+                   GPU
+```
+
+The runtime continuously decides:
+
+* Where should each block live?
+* When should it move?
+* How much memory should each cache use?
+* Which block should be prefetched?
+* Which block should be evicted?
+
+---
+
+# Main Philosophy
+
+Today's AI runtimes are generally designed like this:
+
+```text
+Load Model
+
+↓
+
+Run Model
+
+↓
+
+Finish
+```
+
+Your runtime becomes
+
+```text
+Observe
+
+↓
+
+Predict
+
+↓
+
+Move Memory
+
+↓
+
+Execute
+
+↓
+
+Observe Again
+
+↓
+
+Adapt
+```
+
+It is a continuously adapting system.
+
+---
+
+# What the Runtime Manages
+
+The runtime doesn't just manage one type of memory.
+
+It manages multiple object types.
+
+## Model Weights
+
+```text
+SSD
+
+↓
+
+RAM
+
+↓
+
+VRAM
+
+↓
+
+GPU
+
+↓
+
+Unload
+```
+
+Read-only.
+
+Streamed.
+
+---
+
+## KV Cache
+
+Conversation memory.
+
+```text
+Generate
+
+↓
+
+Keep
+
+↓
+
+Grow
+
+↓
+
+Compress
+
+↓
+
+Move
+
+↓
+
+Reload if needed
+```
+
+Never treated like weights.
+
+---
+
+## Activations
+
+Temporary.
+
+```text
+Create
+
+↓
+
+Use
+
+↓
+
+Delete
+```
+
+---
+
+## Gradients
+
+Training only.
+
+---
+
+## Optimizer States
+
+Training only.
+
+---
+
+# Memory Hierarchy
+
+Every level has logical regions.
+
+```text
+SSD
+
+Cold Storage
+
+Warm Storage
+
+Read Queue
+
+-------------------
+
+RAM
+
+Cold Blocks
+
+Warm Blocks
+
+Hot Blocks
+
+Ready Queue
+
+Pinned Memory
+
+-------------------
+
+VRAM
+
+Incoming Queue
+
+Ready Blocks
+
+Active Blocks
+
+Eviction Queue
+```
+
+Not separate physical memories.
+
+Just different logical states.
+
+---
+
+# Runtime Monitor
+
+The monitor continuously collects:
+
+## Storage
+
+* SSD latency
+* SSD bandwidth
+* Queue depth
+
+## RAM
+
+* Free RAM
+* Cache usage
+* Pinned memory
+
+## GPU
+
+* GPU utilization
+* GPU idle
+* VRAM usage
+* Compute latency
+
+## PCIe
+
+* Transfer latency
+* Bandwidth
+
+## System
+
+* CPU usage
+* Temperature
+* Power
+* Battery (optional)
+
+---
+
+# Adaptive Controller
+
+The controller changes one thing at a time.
+
+Never multiple.
+
+Possible parameters:
+
+* Block size
+* RAM cache size
+* VRAM cache size
+* Prefetch depth
+* Eviction policy
+* Pinned memory pool
+
+Example
+
+```text
+GPU Idle ↑
+
+↓
+
+Increase Prefetch
+
+↓
+
+Observe
+
+↓
+
+Improved?
+
+↓
+
+Yes
+
+↓
+
+Keep
+```
+
+Otherwise
+
+```text
+Rollback
+```
+
+---
+
+# Dynamic Memory Budget
+
+The runtime never assumes it owns the computer.
+
+Example
+
+```text
+Total RAM
+
+16 GB
+
+↓
+
+Available
+
+9 GB
+
+↓
+
+Safe Budget
+
+6 GB
+
+↓
+
+HAMR Cache
+
+6 GB
+```
+
+If another application starts:
+
+```text
+Free RAM
+
+↓
+
+3 GB
+
+↓
+
+Shrink Cache
+
+↓
+
+Continue Running
+```
+
+Same idea for VRAM.
+
+---
+
+# State Machine
+
+Every memory object has a state.
+
+```text
+SSD
+
+↓
+
+RAM_COLD
+
+↓
+
+RAM_HOT
+
+↓
+
+VRAM_READY
+
+↓
+
+GPU_ACTIVE
+
+↓
+
+Released
+```
+
+The scheduler only changes states.
+
+---
+
+# Event-Driven Runtime
+
+Everything happens through events.
+
+```text
+SSD_DONE
+
+↓
+
+RAM_READY
+
+↓
+
+VRAM_COPY
+
+↓
+
+GPU_START
+
+↓
+
+GPU_DONE
+
+↓
+
+PREFETCH_NEXT
+```
+
+No polling loop.
+
+---
+
+# Scheduler
+
+Initially
+
+```text
+FIFO
+```
+
+Later
+
+```text
+Static Prefetch
+```
+
+Later
+
+```text
+Adaptive
+```
+
+Eventually
+
+```text
+Risk-Aware Scheduler
+```
+
+---
+
+# Risk Model
+
+Originally
+
+```text
+Cost
+```
+
+Now
+
+```text
+Risk
+```
+
+Risk mainly comes from
+
+```text
+SSD
+```
+
+because experiments showed PCIe is comparatively stable.
+
+The runtime therefore focuses its adaptive logic primarily on SSD→RAM.
+
+---
+
+# Research Results So Far
+
+Your experiments suggest:
+
+* SSD latency is stochastic.
+* PCIe transfers are comparatively stable.
+* GPU execution for the tested kernels is much faster than storage transfer.
+* Storage behavior, not GPU compute, is the dominant uncertainty in the measured setup.
+
+Those results shaped the current architecture.
+
+---
+
+# Proof of Concept (Current Goal)
+
+The immediate goal is **not** to build the perfect adaptive runtime.
+
+The goal is:
+
+1. Split model into blocks.
+2. Stream blocks.
+3. Produce identical outputs.
+4. Reduce VRAM requirements.
+5. Keep the model running correctly.
+
+Only after that should adaptation be added.
+
+---
+
+# Training Support (Future)
+
+Inference
+
+```text
+Weights
+```
+
+Training
+
+```text
+Weights
+
++
+
+Gradients
+
++
+
+Optimizer States
+
++
+
+Activations
+```
+
+The same memory manager could eventually manage all of these.
+
+However, whether this improves training performance or scalability needs to be demonstrated experimentally.
+
+---
+
+# Fine-Tuning
+
+Same concept.
+
+Instead of keeping:
+
+* LoRA weights
+* optimizer states
+* activations
+
+all in VRAM,
+
+the runtime decides dynamically where they should live.
+
+---
+
+# Large Models
+
+Potential capability:
+
+```text
+400B Model
+
+↓
+
+SSD
+
+↓
+
+RAM
+
+↓
+
+VRAM
+
+↓
+
+GPU
+```
+
+The runtime could make models much larger than VRAM executable, although the achievable performance will depend on hardware and the effectiveness of the scheduling strategy.
+
+---
+
+# Adaptive Learning
+
+Not machine learning.
+
+System learning.
+
+The runtime learns
+
+* SSD behavior
+* GPU behavior
+* RAM availability
+
+and continuously adjusts.
+
+---
+
+# Long-Term Architecture
+
+```text
+                AI Model
+                    │
+                    ▼
+         Adaptive Memory Manager
+                    │
+          Runtime Controller
+                    │
+      ┌─────────────┴─────────────┐
+      ▼                           ▼
+  System Monitor             Decision Engine
+      │                           │
+      └─────────────┬─────────────┘
+                    ▼
+          Memory State Manager
+                    │
+      ┌─────────────┼─────────────┐
+      ▼             ▼             ▼
+     SSD           RAM           VRAM
+                    │
+                    ▼
+                   GPU
+```
+
+---
+
+# Development Roadmap
+
+## Phase A
+
+Working runtime.
+
+* Stream weights.
+* Correct outputs.
+
+---
+
+## Phase B
+
+Pipeline.
+
+* Overlap loading and computation.
+
+---
+
+## Phase C
+
+Monitoring.
+
+* Measure the whole system in real time.
+
+---
+
+## Phase D
+
+Adaptive controller.
+
+* Change one parameter at a time.
+* Keep or roll back based on measured improvement.
+
+---
+
+## Phase E
+
+Training support.
+
+* Extend the same memory manager to training and fine-tuning.
+
+---
+
+# What Makes This Different
+
+From everything we've discussed, I think the distinctive idea is **not simply streaming weights**—that concept already exists in various forms.
+
+The more distinctive direction is:
+
+> **Treating the entire AI memory hierarchy (SSD, RAM, VRAM, GPU) as one adaptive system that continuously observes hardware conditions, respects system resource budgets, and dynamically decides where different kinds of AI data (weights, KV cache, activations, gradients, optimizer states) should reside.**
+
+If you can demonstrate that this adaptive manager consistently uses less VRAM, runs on diverse hardware without manual tuning, and maintains correct model execution, that would be a meaningful contribution. Whether it also improves throughput, supports much larger models, or benefits training are the next hypotheses to test once the proof of concept is working.
+
+
+
+I actually think **Docker is the right choice**, but **not yet as the "AI researcher."**
+
+Use Docker first as the **execution environment**, not the decision-maker.
+
+This is an important distinction.
+
+---
+
+# I would NOT do this yet
+
+```text
+Docker
+
+↓
+
+AI changes algorithms
+
+↓
+
+Runs experiment
+
+↓
+
+Changes formulas
+
+↓
+
+Repeats
+```
+
+This makes debugging extremely difficult.
+
+---
+
+# I WOULD do this
+
+```text
+Docker
+
+↓
+
+Run Runtime
+
+↓
+
+Collect Logs
+
+↓
+
+Collect Metrics
+
+↓
+
+Save Everything
+
+↓
+
+Stop
+```
+
+Docker becomes a **reproducible execution environment**.
+
+---
+
+# This is the architecture I recommend
+
+```
+galaxy-runtime/
+│
+├── docker-compose.yml
+│
+├── runtime/
+│   ├── runtime.py
+│   ├── scheduler.py
+│   ├── monitor.py
+│   ├── cache_manager.py
+│   ├── block_manager.py
+│   └── model_loader.py
+│
+├── configs/
+│   ├── runtime.yaml
+│   ├── scheduler.yaml
+│   └── model.yaml
+│
+├── logs/
+│
+├── metrics/
+│
+├── outputs/
+│
+└── dashboard/
+```
+
+Docker simply runs this.
+
+---
+
+# Every run should be reproducible
+
+Instead of
+
+```
+python runtime.py
+```
+
+you do
+
+```
+docker compose up
+```
+
+Docker should automatically:
+
+```
+1. Detect hardware
+
+↓
+
+2. Read configuration
+
+↓
+
+3. Load model
+
+↓
+
+4. Run runtime
+
+↓
+
+5. Collect logs
+
+↓
+
+6. Save metrics
+
+↓
+
+7. Save timeline
+
+↓
+
+8. Exit
+```
+
+---
+
+# Every execution should produce
+
+```
+Run_001/
+
+├── config.json
+
+├── hardware.json
+
+├── runtime.log
+
+├── scheduler.log
+
+├── monitor.log
+
+├── metrics.json
+
+├── events.json
+
+├── gpu.csv
+
+├── ram.csv
+
+├── vram.csv
+
+├── latency.csv
+
+└── summary.md
+```
+
+Nothing should disappear.
+
+Later you can replay everything.
+
+---
+
+# The monitor becomes your black box recorder
+
+Like an aircraft.
+
+Every event gets recorded.
+
+```
+00.000
+
+Runtime Started
+
+------------
+
+00.015
+
+SSD Read Started
+
+------------
+
+00.023
+
+SSD Read Finished
+
+------------
+
+00.024
+
+RAM Ready
+
+------------
+
+00.026
+
+VRAM Copy Started
+
+------------
+
+00.031
+
+GPU Compute Started
+```
+
+Later,
+
+if something strange happens,
+
+you simply replay the log.
+
+---
+
+# Docker also solves another problem
+
+Suppose you change one algorithm.
+
+Old run
+
+```
+Scheduler
+
+FIFO
+```
+
+New run
+
+```
+Scheduler
+
+Adaptive
+```
+
+Docker stores both separately.
+
+You can compare
+
+```
+Run_001
+
+↓
+
+Run_002
+
+↓
+
+Difference
+```
+
+Automatically.
+
+---
+
+# I would also add a Web Dashboard
+
+Not because it's necessary,
+
+but because debugging becomes much easier.
+
+Imagine watching
+
+```
+GPU Utilization
+
+██████████░░░░
+
+RAM
+
+██████░░░░░░
+
+VRAM
+
+█████░░░░░░░
+
+SSD Queue
+
+██░░░░░░░░░░
+
+Prefetch Depth
+
+16
+```
+
+Live.
+
+When the runtime changes something
+
+the graph immediately changes.
+
+That makes debugging much easier than reading text logs.
+
+---
+
+# Don't automate the research yet
+
+I know you wanted Docker to automatically:
+
+* change formulas
+* change algorithms
+* rerun experiments
+
+I think that's **Phase 2**.
+
+For now:
+
+Docker should only automate:
+
+```
+Execution
+
+↓
+
+Monitoring
+
+↓
+
+Logging
+
+↓
+
+Metrics
+
+↓
+
+Reports
+```
+
+The algorithm remains fixed.
+
+---
+
+# I think the runtime should look like this
+
+```
+Start
+
+↓
+
+Hardware Scan
+
+↓
+
+Read Config
+
+↓
+
+Initialize Runtime
+
+↓
+
+Run
+
+↓
+
+Monitor
+
+↓
+
+Log
+
+↓
+
+Generate Report
+
+↓
+
+Exit
+```
+
+Very simple.
+
+---
+
+# After the POC
+
+Only then add
+
+```
+Experiment Engine
+
+↓
+
+Parameter Sweep
+
+↓
+
+Comparison
+
+↓
+
+Best Result
+```
+
+This should be a separate component,
+
+not inside the runtime.
+
+---
+
+# My biggest suggestion
+
+I think you should split the project into **three independent systems**.
+
+## System 1 — Runtime
+
+Only executes AI models.
+
+Never analyzes.
+
+Never changes itself.
+
+---
+
+## System 2 — Monitor
+
+Collects every metric.
+
+Never makes decisions.
+
+---
+
+## System 3 — Research Platform
+
+Uses the logs.
+
+Compares runs.
+
+Generates reports.
+
+Eventually,
+
+it may suggest new configurations.
+
+---
+
+# I think your first Docker milestone should be this
+
+```
+docker compose up
+
+↓
+
+Detect Hardware
+
+↓
+
+Run TinyLlama
+
+↓
+
+Stream Layers
+
+↓
+
+Generate Response
+
+↓
+
+Save
+
+runtime.log
+
+metrics.json
+
+events.json
+
+summary.md
+
+↓
+
+Stop
+```
+
+If that works,
+
+you already have a **working proof of concept**.
+
+---
+
+## My recommendation
+
+I would absolutely use Docker **from the beginning**, but I would keep its responsibility narrow:
+
+* **Containerize** the runtime so it runs the same way everywhere.
+* **Automatically collect** logs, metrics, configurations, and outputs.
+* **Make every run reproducible** so you can compare changes later.
+
+I would **not** let Docker or an AI agent modify algorithms or formulas during the POC stage. First build a runtime that works correctly and produces complete diagnostics. Once you have that stable foundation, you can add an experiment engine that automatically launches many Docker runs with different configurations and compares the results. That gives you automation without making the core runtime harder to debug.

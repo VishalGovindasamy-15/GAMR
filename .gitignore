@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.env
+.venv
+# Model weights — too large for git
+models/
+!models/.gitkeep
+
+# Run outputs — generated, not tracked
+runs/
+!runs/.gitkeep
