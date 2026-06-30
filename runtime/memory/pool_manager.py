@@ -4,12 +4,12 @@ MemoryPoolManager — coordinates the RAM pool and VRAM pool together.
 Sits between the Memory Controller and the pool plugins.
 The Memory Controller calls MemoryPoolManager; it never touches pools directly.
 
-In Phase 6: DynamicPool drops in here — no controller changes needed.
+Phase 6: DynamicPool drops in here — no controller changes needed.
 """
 from __future__ import annotations
 
 import logging
-from typing import Dict
+from typing import Dict, Set
 
 from runtime.memory.memory_object import Location, MemoryObject
 from runtime.plugins.pool.base import PoolPlugin
@@ -33,6 +33,8 @@ class MemoryPoolManager:
             Location.RAM:  ram_pool,
             Location.VRAM: vram_pool,
         }
+        # Phase 3: tracks object IDs currently being prefetched (H2D copy in-flight)
+        self._prefetch_queue: Set[str] = set()
 
     # ── Query ──────────────────────────────────────────────────────────
 
@@ -72,16 +74,35 @@ class MemoryPoolManager:
         self._pools[Location.VRAM].free(obj)
         logger.debug(f"VRAM freed for {obj!r} ({self.vram_utilization():.1%} used)")
 
+    # ── Prefetch queue (Phase 3) ───────────────────────────────────────
+
+    def mark_prefetching(self, object_id: str) -> None:
+        """Register that an object is being prefetched (H2D copy in-flight)."""
+        self._prefetch_queue.add(object_id)
+        logger.debug(f"Prefetch +{object_id[:8]}… ({len(self._prefetch_queue)} in flight)")
+
+    def mark_prefetch_done(self, object_id: str) -> None:
+        """Remove object from the in-flight prefetch set."""
+        self._prefetch_queue.discard(object_id)
+        logger.debug(f"Prefetch done -{object_id[:8]}… ({len(self._prefetch_queue)} in flight)")
+
+    def is_prefetching(self, object_id: str) -> bool:
+        return object_id in self._prefetch_queue
+
+    def prefetch_in_flight(self) -> int:
+        return len(self._prefetch_queue)
+
     # ── Status snapshot ────────────────────────────────────────────────
 
     def status(self) -> dict:
         ram  = self._pools[Location.RAM]
         vram = self._pools[Location.VRAM]
         return {
-            "ram_budget_gb":  round(ram.budget_bytes()  / (1024**3), 2),
-            "ram_used_gb":    round(ram.used_bytes()    / (1024**3), 2),
-            "ram_util_pct":   round(ram.utilization()   * 100, 1),
-            "vram_budget_gb": round(vram.budget_bytes() / (1024**3), 2),
-            "vram_used_gb":   round(vram.used_bytes()   / (1024**3), 2),
-            "vram_util_pct":  round(vram.utilization()  * 100, 1),
+            "ram_budget_gb":       round(ram.budget_bytes()  / (1024**3), 2),
+            "ram_used_gb":         round(ram.used_bytes()    / (1024**3), 2),
+            "ram_util_pct":        round(ram.utilization()   * 100, 1),
+            "vram_budget_gb":      round(vram.budget_bytes() / (1024**3), 2),
+            "vram_used_gb":        round(vram.used_bytes()   / (1024**3), 2),
+            "vram_util_pct":       round(vram.utilization()  * 100, 1),
+            "prefetch_in_flight":  len(self._prefetch_queue),
         }

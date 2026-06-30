@@ -19,10 +19,15 @@ logger = logging.getLogger("gamr.memory.object_manager")
 # ── Valid transitions ──────────────────────────────────────────────────────────
 _VALID: Dict[ObjectState, Set[ObjectState]] = {
     ObjectState.SSD_COLD: {
-        ObjectState.RAM_READY, ObjectState.PREFETCHING, ObjectState.RELEASED,
+        ObjectState.RAM_READY,
+        ObjectState.PREFETCHING,   # Phase 3: async H2D copy started
+        ObjectState.RELEASED,
     },
     ObjectState.PREFETCHING: {
-        ObjectState.RAM_READY, ObjectState.SSD_COLD, ObjectState.RELEASED,
+        ObjectState.VRAM_READY,    # Phase 3: copy complete → ready
+        ObjectState.RAM_READY,     # copy landed in RAM en route to VRAM
+        ObjectState.SSD_COLD,      # prefetch cancelled
+        ObjectState.RELEASED,
     },
     ObjectState.RAM_READY: {
         ObjectState.VRAM_READY, ObjectState.SSD_COLD, ObjectState.RELEASED,

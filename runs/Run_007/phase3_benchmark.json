@@ -1,0 +1,9 @@
+{
+  "fifo_gen_time_s": 7.75,
+  "prefetch_gen_time_s": 6.44,
+  "speedup_pct": 16.9,
+  "validation_passed": true,
+  "tokens_match": true,
+  "fifo_peak_vram_gb": 0.338,
+  "prefetch_peak_vram_gb": 0.42
+}

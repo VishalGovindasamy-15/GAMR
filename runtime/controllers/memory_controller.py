@@ -167,4 +167,158 @@ class MemoryController:
             "gen_time_s": round(gen_time, 2),
             "peak_vram_bytes": peak_vram,
             "output_tokens": len(output_token_ids),
+            "scheduler": "fifo",
+        }
+
+    # ── Prefetch inference (Phase 3) ───────────────────────────────────
+
+    def run_streaming_inference_prefetch(
+        self,
+        model_path: str,
+        prompt: str,
+        max_new_tokens: int = 50,
+        prefetch_depth: int = 1,
+    ) -> tuple[str, list[int], dict]:
+        """
+        Streaming inference with pipeline overlap.
+
+        Uses two CUDA streams:
+          copy_stream  — H2D transfer of next layer (non-blocking)
+          compute_stream — GPU computation of current layer
+
+        While layer N computes on the GPU, layer N+1 is being copied to the
+        GPU in the background. When N finishes, N+1 is already resident.
+
+        This is the Phase 3 optimization. The model weights stay on CPU RAM
+        between steps (same as FIFO) but GPU utilization is higher because
+        there is no idle wait for H2D transfers.
+        """
+        logger.info("Loading model to CPU RAM (SSD → RAM step)...")
+        t0 = time.time()
+
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+        )
+        model.eval()
+        load_time = time.time() - t0
+        logger.info(f"Model loaded to CPU in {load_time:.1f}s")
+
+        device = self._device
+        is_cuda = "cuda" in device
+
+        # ── CUDA streams for pipeline overlap ─────────────────────────
+        if is_cuda:
+            copy_stream    = torch.cuda.Stream()
+            compute_stream = torch.cuda.default_stream()
+        else:
+            copy_stream = compute_stream = None
+
+        layers = list(model.model.layers)
+        n = len(layers)
+        logger.info(
+            f"Prefetch inference: {n} layers, depth={prefetch_depth}, device={device}"
+        )
+
+        class _PrefetchWrapper(nn.Module):
+            def __init__(self_w, idx: int) -> None:
+                super().__init__()
+                self_w._idx = idx
+
+            def forward(self_w, *args, **kwargs):
+                # Move args to device
+                args = tuple(
+                    a.to(device) if isinstance(a, torch.Tensor) else a for a in args
+                )
+                kwargs = {
+                    k: (v.to(device) if isinstance(v, torch.Tensor) else v)
+                    for k, v in kwargs.items()
+                }
+
+                # Make default stream wait for any pending H2D copy on copy_stream.
+                # For layers 1-21: the previous layer's wrapper submitted their H2D
+                # copy here — we must wait before using their weights.
+                if is_cuda:
+                    torch.cuda.current_stream().wait_stream(copy_stream)
+
+                # Ensure this layer is on device.
+                # - Layers 1-21: no-op (prefetch from previous step already done)
+                # - Layer 0 on token > 1: synchronous H2D (no prefetch queued for it)
+                layers[self_w._idx].to(device)
+
+                # Start prefetching next layer(s) concurrently with compute.
+                # These run on copy_stream, independent of the default stream.
+                if is_cuda:
+                    for offset in range(1, prefetch_depth + 1):
+                        ni = self_w._idx + offset
+                        if ni < n:
+                            with torch.cuda.stream(copy_stream):
+                                layers[ni].to(device, non_blocking=True)
+
+                # Compute (default stream)
+                output = layers[self_w._idx](*args, **kwargs)
+
+                # Move current layer back to CPU
+                layers[self_w._idx].to("cpu")
+                if is_cuda:
+                    torch.cuda.empty_cache()
+
+                return output
+
+        # Wrap all decoder layers
+        model.model.layers = nn.ModuleList([_PrefetchWrapper(i) for i in range(n)])
+
+        # Move non-layer components to device (stay there)
+        model.model.embed_tokens.to(device)
+        model.model.norm.to(device)
+        model.lm_head.to(device)
+
+        # Pre-load first `prefetch_depth` layers before generation starts
+        if is_cuda:
+            for i in range(min(prefetch_depth, n)):
+                with torch.cuda.stream(copy_stream):
+                    layers[i].to(device, non_blocking=True)
+            copy_stream.synchronize()
+        else:
+            for i in range(min(prefetch_depth, n)):
+                layers[i].to(device)
+
+        # ── Generate ──────────────────────────────────────────────────
+        inputs = tokenizer(prompt, return_tensors="pt")
+        input_ids = inputs["input_ids"].to(device)
+
+        t_gen = time.time()
+        with torch.no_grad():
+            output_ids = model.generate(
+                input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                temperature=None,
+                top_p=None,
+            )
+        gen_time = time.time() - t_gen
+
+        result = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        output_token_ids = output_ids[0].tolist()
+        logger.info(f"Prefetch generation done in {gen_time:.2f}s | {len(output_token_ids)} tokens")
+
+        # ── Peak VRAM ─────────────────────────────────────────────────
+        peak_vram = torch.cuda.max_memory_allocated(device) if is_cuda else 0
+        logger.info(f"Peak VRAM used: {peak_vram / (1024**3):.3f} GB")
+
+        # ── Cleanup ───────────────────────────────────────────────────
+        model.model.layers = nn.ModuleList(layers)
+        model.cpu()
+        del model
+        if is_cuda:
+            torch.cuda.empty_cache()
+
+        return result, output_token_ids, {
+            "load_time_s":    round(load_time, 2),
+            "gen_time_s":     round(gen_time, 2),
+            "peak_vram_bytes": peak_vram,
+            "output_tokens":  len(output_token_ids),
+            "scheduler":      f"static_prefetch_d{prefetch_depth}",
         }

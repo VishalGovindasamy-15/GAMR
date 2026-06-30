@@ -1,0 +1,7 @@
+{
+  "validation_passed": true,
+  "reference_time_s": 0.9802460670471191,
+  "gamr_time_s": 6.44,
+  "mismatch_index": null,
+  "prompt": "<|system|>\nYou are a helpful assistant.<|user|>\nWhat is 2 + 2?<|assistant|>\n"
+}

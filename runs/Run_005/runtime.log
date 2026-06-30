@@ -1,0 +1,15 @@
+2026-06-30T08:10:04 [gamr.hardware       ] INFO    Hardware scan complete — GPU: NVIDIA GeForce RTX 3050 6GB Laptop GPU | CUDA: True | VRAM: 6.0 GB | RAM: 15.3 GB
+2026-06-30T08:10:04 [gamr.hal.cuda       ] INFO    CUDABackend ready: NVIDIA GeForce RTX 3050 6GB Laptop GPU | VRAM 6.0 GB
+2026-06-30T08:10:04 [gamr.pool           ] INFO    RAMPool: budget=2.15 GB
+2026-06-30T08:10:04 [gamr.pool           ] INFO    VRAMPool: budget=4.53 GB
+2026-06-30T08:10:04 [gamr.runtime        ] INFO    === Run 1: FIFO (baseline) ===
+2026-06-30T08:10:04 [gamr.controller     ] INFO    Loading model to CPU RAM (SSD → RAM step)...
+2026-06-30T08:10:05 [gamr.controller     ] INFO    Model loaded to CPU in 0.8s
+2026-06-30T08:10:05 [gamr.controller     ] INFO    Streaming inference: 22 layers, device=cuda:0
+2026-06-30T08:10:15 [gamr.controller     ] INFO    Generation complete in 9.77s | 42 tokens
+2026-06-30T08:10:15 [gamr.controller     ] INFO    Peak VRAM used: 0.338 GB
+2026-06-30T08:10:15 [gamr.runtime        ] INFO    FIFO  gen time: 9.77s | tokens=42
+2026-06-30T08:10:15 [gamr.runtime        ] INFO    === Run 2: StaticPrefetch depth=1 ===
+2026-06-30T08:10:15 [gamr.controller     ] INFO    Loading model to CPU RAM (SSD → RAM step)...
+2026-06-30T08:10:16 [gamr.controller     ] INFO    Model loaded to CPU in 1.0s
+2026-06-30T08:10:16 [gamr.controller     ] INFO    Prefetch inference: 22 layers, depth=1, device=cuda:0
