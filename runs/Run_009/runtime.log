@@ -1,0 +1,36 @@
+2026-06-30T08:52:56 [gamr.runtime        ] INFO    ╔══════════════════════════════════════════════════════════════╗
+║      GAMR — Galaxy Adaptive Memory Runtime  v0.1.0          ║
+║      Adaptive Hierarchical AI Memory Manager (AHAMM)        ║
+╚══════════════════════════════════════════════════════════════╝
+2026-06-30T08:52:56 [gamr.runtime        ] INFO    Run directory : runs/Run_009
+2026-06-30T08:52:56 [gamr.hardware       ] INFO    Hardware scan complete — GPU: NVIDIA GeForce RTX 3050 6GB Laptop GPU | CUDA: True | VRAM: 6.0 GB | RAM: 15.3 GB
+2026-06-30T08:52:56 [gamr.hardware       ] INFO    hardware.json saved → runs/Run_009/hardware.json
+2026-06-30T08:52:56 [gamr.hal.cuda       ] INFO    CUDABackend ready: NVIDIA GeForce RTX 3050 6GB Laptop GPU | VRAM 6.0 GB
+2026-06-30T08:52:56 [gamr.runtime        ] INFO    HAL: CUDABackend(device='cuda:0', vram=6.0GB)
+2026-06-30T08:52:56 [gamr.pool           ] INFO    RAMPool: budget=2.12 GB
+2026-06-30T08:52:56 [gamr.pool           ] INFO    VRAMPool: budget=4.52 GB
+2026-06-30T08:52:56 [gamr.recorder       ] INFO    Recorder initialised → runs/Run_009
+2026-06-30T08:52:56 [gamr.monitor        ] INFO    SystemMonitor started (interval=0.5s, device=cuda:0)
+2026-06-30T08:52:56 [gamr.runtime        ] INFO    Model path : ./models/TinyLlama-1.1B
+2026-06-30T08:52:56 [gamr.runtime        ] INFO    Prompt     : '<|system|>\nYou are a helpful assistant.<|user|>\nWhat is 2 + 2?<|assistant|>\n'
+2026-06-30T08:52:56 [gamr.controller     ] INFO    Loading model to CPU RAM (SSD → RAM step)...
+2026-06-30T08:52:57 [gamr.controller     ] INFO    Model loaded to CPU in 0.5s
+2026-06-30T08:52:57 [gamr.controller     ] INFO    Streaming inference: 22 layers, device=cuda:0
+2026-06-30T08:53:03 [gamr.controller     ] INFO    Generation complete in 5.62s | 42 tokens
+2026-06-30T08:53:03 [gamr.controller     ] INFO    Peak VRAM used: 0.338 GB
+2026-06-30T08:53:03 [gamr.runtime        ] INFO    GAMR output: '<|system|>\nYou are a helpful assistant.<|user|>\nWhat is 2 + 2?<|assistant|>\n2 + 2 = 4.'
+2026-06-30T08:53:03 [gamr.monitor        ] INFO    SystemMonitor stopped.
+2026-06-30T08:53:03 [gamr.runtime        ] INFO    Running validation against HF reference...
+2026-06-30T08:53:03 [gamr.validation     ] INFO    Running HF reference inference (full model on GPU)...
+2026-06-30T08:53:03 [gamr.validation     ] INFO    Reference done in 0.61s → 42 tokens
+2026-06-30T08:53:03 [gamr.validation     ] INFO    Validation: ✅ PASS
+  Prompt         : '<|system|>\nYou are a helpful assistant.<|user|>\nWhat is 2 + 2?<|assistant|>\n'
+  Reference time : 0.61s
+  GAMR time      : 5.62s
+2026-06-30T08:53:03 [gamr.recorder       ] INFO    Recorder closed and all files flushed.
+2026-06-30T08:53:03 [gamr.runtime        ] INFO    ==============================================================
+2026-06-30T08:53:03 [gamr.runtime        ] INFO    Validation  : PASS ✅
+2026-06-30T08:53:03 [gamr.runtime        ] INFO    Peak VRAM   : 0.338 GB
+2026-06-30T08:53:03 [gamr.runtime        ] INFO    Gen time    : 5.62s
+2026-06-30T08:53:03 [gamr.runtime        ] INFO    Run saved   : runs/Run_009
+2026-06-30T08:53:03 [gamr.runtime        ] INFO    ==============================================================

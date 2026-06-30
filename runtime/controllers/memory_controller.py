@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import List
+from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -28,18 +28,35 @@ from runtime.plugins.scheduler.base import SchedulerPlugin
 
 logger = logging.getLogger("gamr.controller")
 
+# Late import to avoid circular dependency
+def _get_recorder_type():
+    try:
+        from recorder.recorder import Recorder
+        return Recorder
+    except ImportError:
+        return None
+
 
 class _StreamingLayerWrapper(nn.Module):
     """
     Wraps a transformer decoder layer.
     On forward(): moves to GPU → computes → moves back to CPU.
     This is the RAM → VRAM → GPU_ACTIVE → RAM transition per layer.
+    Records per-layer latencies to the Recorder (Phase 4).
     """
 
-    def __init__(self, layer: nn.Module, device: str) -> None:
+    def __init__(
+        self,
+        layer: nn.Module,
+        device: str,
+        layer_index: int = -1,
+        recorder=None,  # Optional[Recorder] — avoids circular import type hint
+    ) -> None:
         super().__init__()
-        self._layer = layer
-        self._device = device
+        self._layer       = layer
+        self._device      = device
+        self._layer_index = layer_index
+        self._recorder    = recorder
 
     def forward(self, *args, **kwargs):
         # Move all tensor args to device
@@ -51,8 +68,45 @@ class _StreamingLayerWrapper(nn.Module):
             k: (v.to(self._device) if isinstance(v, torch.Tensor) else v)
             for k, v in kwargs.items()
         }
+        # H2D load (SSD → VRAM)
+        t_load = time.time()
         self._layer.to(self._device)
+        load_ms = (time.time() - t_load) * 1000
+
+        # GPU compute
+        t_compute = time.time()
         output = self._layer(*args, **kwargs)
+        if "cuda" in self._device:
+            torch.cuda.synchronize(self._device)
+        compute_ms = (time.time() - t_compute) * 1000
+
+        # VRAM after compute
+        vram_gb = 0.0
+        if "cuda" in self._device:
+            vram_gb = torch.cuda.memory_allocated(self._device) / (1024**3)
+
+        # Record events
+        if self._recorder is not None:
+            self._recorder.record(
+                "LAYER_LOAD_DONE",
+                payload={
+                    "layer_index": self._layer_index,
+                    "layer_name":  f"decoder.{self._layer_index}",
+                    "latency_ms":  round(load_ms, 3),
+                    "vram_used_gb": round(vram_gb, 4),
+                },
+            )
+            self._recorder.record(
+                "LAYER_COMPUTE_DONE",
+                payload={
+                    "layer_index": self._layer_index,
+                    "layer_name":  f"decoder.{self._layer_index}",
+                    "latency_ms":  round(compute_ms, 3),
+                    "vram_used_gb": round(vram_gb, 4),
+                },
+            )
+
+        # Move layer back to CPU
         self._layer.to("cpu")
         torch.cuda.empty_cache()
         return output
@@ -75,6 +129,7 @@ class MemoryController:
         ram_pool: PoolPlugin,
         vram_pool: PoolPlugin,
         event_bus: EventBus,
+        recorder=None,  # Optional[Recorder]
     ) -> None:
         self.hal = hal
         self.manager = object_manager
@@ -82,6 +137,7 @@ class MemoryController:
         self.ram_pool = ram_pool
         self.vram_pool = vram_pool
         self.bus = event_bus
+        self.recorder = recorder
         self._device = hal.device()
 
     # ── Inference ─────────────────────────────────────────────────────
@@ -117,8 +173,8 @@ class MemoryController:
         # ── Wrap decoder layers ───────────────────────────────────────
         original_layers = list(model.model.layers)
         model.model.layers = nn.ModuleList([
-            _StreamingLayerWrapper(layer, self._device)
-            for layer in original_layers
+            _StreamingLayerWrapper(layer, self._device, layer_index=i, recorder=self.recorder)
+            for i, layer in enumerate(original_layers)
         ])
         # Move non-layer components to device (they stay there)
         model.model.embed_tokens.to(self._device)

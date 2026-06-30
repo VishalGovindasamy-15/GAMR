@@ -1,0 +1,2 @@
+2026-06-30T08:52:56 [gamr.monitor        ] INFO    SystemMonitor started (interval=0.5s, device=cuda:0)
+2026-06-30T08:53:03 [gamr.monitor        ] INFO    SystemMonitor stopped.

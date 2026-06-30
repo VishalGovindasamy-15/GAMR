@@ -1,0 +1,9 @@
+{
+  "load_time_s": 0.49,
+  "gen_time_s": 5.62,
+  "peak_vram_bytes": 363266048,
+  "output_tokens": 42,
+  "scheduler": "fifo",
+  "validation_passed": true,
+  "peak_vram_gb": 0.338
+}

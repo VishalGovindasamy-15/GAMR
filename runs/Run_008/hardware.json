@@ -1,0 +1,17 @@
+{
+  "gpu_name": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "cuda_available": true,
+  "cuda_version": "13.0",
+  "vram_total_bytes": 6442450944,
+  "vram_free_bytes": 6070992896,
+  "ram_total_bytes": 16434601984,
+  "ram_free_bytes": 9037389824,
+  "ssd_path": "",
+  "ssd_total_bytes": 0,
+  "ssd_free_bytes": 0,
+  "python_version": "3.12.3",
+  "platform": "Linux-6.18.7-76061807-generic-x86_64-with-glibc2.39",
+  "cpu_count": 16,
+  "vram_total_gb": 6.0,
+  "ram_total_gb": 15.31
+}

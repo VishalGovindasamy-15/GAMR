@@ -1,0 +1,18 @@
+2026-06-30T08:52:44 [gamr.runtime        ] INFO    ╔══════════════════════════════════════════════════════════════╗
+║      GAMR — Galaxy Adaptive Memory Runtime  v0.1.0          ║
+║      Adaptive Hierarchical AI Memory Manager (AHAMM)        ║
+╚══════════════════════════════════════════════════════════════╝
+2026-06-30T08:52:44 [gamr.runtime        ] INFO    Run directory : runs/Run_008
+2026-06-30T08:52:44 [gamr.hardware       ] INFO    Hardware scan complete — GPU: NVIDIA GeForce RTX 3050 6GB Laptop GPU | CUDA: True | VRAM: 6.0 GB | RAM: 15.3 GB
+2026-06-30T08:52:44 [gamr.hardware       ] INFO    hardware.json saved → runs/Run_008/hardware.json
+2026-06-30T08:52:44 [gamr.hal.cuda       ] INFO    CUDABackend ready: NVIDIA GeForce RTX 3050 6GB Laptop GPU | VRAM 6.0 GB
+2026-06-30T08:52:44 [gamr.runtime        ] INFO    HAL: CUDABackend(device='cuda:0', vram=6.0GB)
+2026-06-30T08:52:44 [gamr.pool           ] INFO    RAMPool: budget=2.10 GB
+2026-06-30T08:52:44 [gamr.pool           ] INFO    VRAMPool: budget=4.52 GB
+2026-06-30T08:52:44 [gamr.recorder       ] INFO    Recorder initialised → runs/Run_008
+2026-06-30T08:52:44 [gamr.monitor        ] INFO    SystemMonitor started (interval=0.5s, device=cuda:0)
+2026-06-30T08:52:44 [gamr.runtime        ] INFO    Model path : /app/models/TinyLlama-1.1B
+2026-06-30T08:52:44 [gamr.runtime        ] INFO    Prompt     : 'What is 2 + 2?'
+2026-06-30T08:52:44 [gamr.runtime        ] ERROR   Model not found at /app/models/TinyLlama-1.1B. Download with: huggingface-cli download TinyLlama/TinyLlama-1.1B-Chat-v1.0 --local-dir ./models/TinyLlama-1.1B
+2026-06-30T08:52:44 [gamr.monitor        ] INFO    SystemMonitor stopped.
+2026-06-30T08:52:44 [gamr.recorder       ] INFO    Recorder closed and all files flushed.
