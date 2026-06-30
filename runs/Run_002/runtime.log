@@ -1,0 +1,17 @@
+2026-06-30T07:56:02 [gamr.runtime        ] INFO    Run directory: runs/Run_002
+2026-06-30T07:56:04 [gamr.hardware       ] INFO    Hardware scan complete — GPU: NVIDIA GeForce RTX 3050 6GB Laptop GPU | CUDA: True | VRAM: 6.0 GB | RAM: 15.3 GB
+2026-06-30T07:56:04 [gamr.hardware       ] INFO    hardware.json saved → runs/Run_002/hardware.json
+2026-06-30T07:56:04 [gamr.hal.cuda       ] INFO    CUDABackend ready: NVIDIA GeForce RTX 3050 6GB Laptop GPU | VRAM 6.0 GB
+2026-06-30T07:56:04 [gamr.runtime        ] INFO    HAL: CUDABackend(device='cuda:0', vram=6.0GB)
+2026-06-30T07:56:04 [gamr.pool           ] INFO    RAMPool: budget=2.02 GB
+2026-06-30T07:56:04 [gamr.pool           ] INFO    VRAMPool: budget=4.53 GB
+2026-06-30T07:56:04 [gamr.runtime        ] INFO    === GAMR Streaming Inference Start ===
+2026-06-30T07:56:04 [gamr.controller     ] INFO    Loading model to CPU RAM (SSD → RAM step)...
+2026-06-30T07:56:05 [gamr.controller     ] INFO    Model loaded to CPU in 1.5s
+2026-06-30T07:56:05 [gamr.controller     ] INFO    Streaming inference: 22 layers, device=cuda:0
+2026-06-30T07:56:07 [gamr.controller     ] INFO    Generation complete in 1.88s
+2026-06-30T07:56:07 [gamr.controller     ] INFO    Peak VRAM used: 0.337 GB
+2026-06-30T07:56:07 [gamr.runtime        ] INFO    GAMR output: 'What is 2 + 2?'
+2026-06-30T07:56:07 [gamr.runtime        ] INFO    Peak VRAM: 0.337 GB
+2026-06-30T07:56:07 [gamr.runtime        ] INFO    === Running HF Reference ===
+2026-06-30T07:56:07 [gamr.validation     ] INFO    Running HF reference inference (full model on GPU)...

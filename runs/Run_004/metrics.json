@@ -1,0 +1,8 @@
+{
+  "load_time_s": 0.83,
+  "gen_time_s": 7.74,
+  "peak_vram_bytes": 363266048,
+  "output_tokens": 42,
+  "validation_passed": true,
+  "peak_vram_gb": 0.338
+}

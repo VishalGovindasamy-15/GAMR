@@ -1,0 +1,22 @@
+2026-06-30T07:57:07 [gamr.hardware       ] INFO    Hardware scan complete — GPU: NVIDIA GeForce RTX 3050 6GB Laptop GPU | CUDA: True | VRAM: 6.0 GB | RAM: 15.3 GB
+2026-06-30T07:57:07 [gamr.hardware       ] INFO    hardware.json saved → runs/Run_003/hardware.json
+2026-06-30T07:57:07 [gamr.hal.cuda       ] INFO    CUDABackend ready: NVIDIA GeForce RTX 3050 6GB Laptop GPU | VRAM 6.0 GB
+2026-06-30T07:57:07 [gamr.pool           ] INFO    RAMPool: budget=1.93 GB
+2026-06-30T07:57:07 [gamr.pool           ] INFO    VRAMPool: budget=4.53 GB
+2026-06-30T07:57:07 [gamr.runtime        ] INFO    === GAMR Streaming Inference ===
+2026-06-30T07:57:07 [gamr.controller     ] INFO    Loading model to CPU RAM (SSD → RAM step)...
+2026-06-30T07:57:08 [gamr.controller     ] INFO    Model loaded to CPU in 1.4s
+2026-06-30T07:57:08 [gamr.controller     ] INFO    Streaming inference: 22 layers, device=cuda:0
+2026-06-30T07:57:10 [gamr.controller     ] INFO    Generation complete in 2.01s
+2026-06-30T07:57:10 [gamr.controller     ] INFO    Peak VRAM used: 0.337 GB
+2026-06-30T07:57:10 [gamr.runtime        ] INFO    GAMR output: 'What is 2 + 2?'
+2026-06-30T07:57:10 [gamr.runtime        ] INFO    === HF Reference Validation ===
+2026-06-30T07:57:10 [gamr.validation     ] INFO    Running HF reference inference (full model on GPU)...
+2026-06-30T07:57:11 [gamr.validation     ] INFO    Reference done in 0.77s → 10 tokens
+2026-06-30T07:57:11 [gamr.validation     ] INFO    Validation: ❌ FAIL
+  Prompt         : 'What is 2 + 2?'
+  Reference time : 0.77s
+  GAMR time      : 2.01s
+  First mismatch : token index 9
+  Reference text : 'What is 2 + 2?'
+  GAMR text      : 'What is 2 + 2?'
