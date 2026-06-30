@@ -13,18 +13,21 @@ from __future__ import annotations
 
 import logging
 import time
+from pathlib import Path
 from typing import List, Optional
 
 import torch
 import torch.nn as nn
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
+from runtime.controllers.decision_engine import DecisionEngine, RunMetrics
 from runtime.event_bus import Event, EventBus, EventType
 from runtime.hal.base import HardwareBackend
 from runtime.memory.memory_object import ObjectState, WeightObject
 from runtime.memory.object_manager import ObjectManager
 from runtime.plugins.pool.base import PoolPlugin
 from runtime.plugins.scheduler.base import SchedulerPlugin
+from runtime.plugins.scheduler.adaptive import AdaptiveScheduler
 
 logger = logging.getLogger("gamr.controller")
 
@@ -117,8 +120,7 @@ class MemoryController:
     Coordinates the streaming inference loop.
 
     Owns: object_manager, scheduler, ram_pool, vram_pool, event_bus.
-    In the POC it is a thin coordinator.
-    In Phase 5 it gains a Decision Engine for adaptive tuning.
+    Phase 5: gains the Decision Engine for adaptive prefetch tuning.
     """
 
     def __init__(
@@ -129,7 +131,8 @@ class MemoryController:
         ram_pool: PoolPlugin,
         vram_pool: PoolPlugin,
         event_bus: EventBus,
-        recorder=None,  # Optional[Recorder]
+        recorder=None,          # Optional[Recorder]
+        fitted_params_path: Optional[Path] = None,
     ) -> None:
         self.hal = hal
         self.manager = object_manager
@@ -139,6 +142,17 @@ class MemoryController:
         self.bus = event_bus
         self.recorder = recorder
         self._device = hal.device()
+
+        # Phase 5: Decision Engine (only active when scheduler is AdaptiveScheduler)
+        if isinstance(scheduler, AdaptiveScheduler):
+            self.decision_engine: Optional[DecisionEngine] = DecisionEngine(
+                scheduler=scheduler,
+                params_path=fitted_params_path,
+                recorder=recorder,
+            )
+            logger.info("DecisionEngine initialised (adaptive mode).")
+        else:
+            self.decision_engine = None
 
     # ── Inference ─────────────────────────────────────────────────────
 
@@ -378,3 +392,165 @@ class MemoryController:
             "output_tokens":  len(output_token_ids),
             "scheduler":      f"static_prefetch_d{prefetch_depth}",
         }
+
+    # ── Adaptive inference loop (Phase 5) ─────────────────────────────
+
+    def run_adaptive_loop(
+        self,
+        model_path: str,
+        prompt: str,
+        max_new_tokens: int = 20,
+        n_runs: int = 10,
+    ) -> list[dict]:
+        """
+        Run N inference cycles. After each cycle the Decision Engine observes
+        per-run metrics and adjusts the AdaptiveScheduler's prefetch_depth.
+
+        Requires: self.scheduler is AdaptiveScheduler
+                  self.decision_engine is DecisionEngine
+
+        Returns:
+            List of per-run dicts (one per cycle): metrics + decision record.
+        """
+        if self.decision_engine is None:
+            raise RuntimeError(
+                "run_adaptive_loop requires an AdaptiveScheduler + DecisionEngine. "
+                "Initialise MemoryController with scheduler=AdaptiveScheduler(...)."
+            )
+
+        logger.info(f"=== Adaptive loop: {n_runs} runs, device={self._device} ===")
+        run_records: list[dict] = []
+
+        # Load model once — keep on CPU between runs
+        logger.info("Loading model to CPU RAM (adaptive loop)...")
+        t0 = time.time()
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+        )
+        model.eval()
+        load_time = time.time() - t0
+        logger.info(f"Model loaded in {load_time:.1f}s")
+
+        device = self._device
+        is_cuda = "cuda" in device
+
+        inputs = tokenizer(prompt, return_tensors="pt")
+        input_ids = inputs["input_ids"].to(device)
+
+        for run_i in range(1, n_runs + 1):
+            depth = self.scheduler.prefetch_depth
+            logger.info(f"--- Run {run_i}/{n_runs} | prefetch_depth={depth} ---")
+
+            # Build prefetch-instrumented layer wrappers for this run
+            layers = list(model.model.layers)
+            n_layers = len(layers)
+            copy_stream = torch.cuda.Stream() if is_cuda else None
+
+            load_times: list[float] = []
+            compute_times: list[float] = []
+
+            class _AdaptWrapper(nn.Module):
+                def __init__(iw, idx: int) -> None:
+                    super().__init__()
+                    iw._idx = idx
+
+                def forward(iw, *args, **kwargs):
+                    args = tuple(a.to(device) if isinstance(a, torch.Tensor) else a for a in args)
+                    kwargs = {k: (v.to(device) if isinstance(v, torch.Tensor) else v) for k, v in kwargs.items()}
+                    if is_cuda:
+                        torch.cuda.current_stream().wait_stream(copy_stream)
+                    t_load = time.time()
+                    layers[iw._idx].to(device)
+                    load_ms = (time.time() - t_load) * 1000
+                    load_times.append(load_ms)
+                    if is_cuda:
+                        for off in range(1, depth + 1):
+                            ni = iw._idx + off
+                            if ni < n_layers:
+                                with torch.cuda.stream(copy_stream):
+                                    layers[ni].to(device, non_blocking=True)
+                    t_compute = time.time()
+                    output = layers[iw._idx](*args, **kwargs)
+                    if is_cuda:
+                        torch.cuda.synchronize(device)
+                    compute_ms = (time.time() - t_compute) * 1000
+                    compute_times.append(compute_ms)
+                    layers[iw._idx].to("cpu")
+                    if is_cuda:
+                        torch.cuda.empty_cache()
+                    return output
+
+            model.model.layers = nn.ModuleList([_AdaptWrapper(i) for i in range(n_layers)])
+            model.model.embed_tokens.to(device)
+            model.model.norm.to(device)
+            model.lm_head.to(device)
+
+            if is_cuda:
+                torch.cuda.reset_peak_memory_stats(device)
+
+            t_gen = time.time()
+            with torch.no_grad():
+                output_ids = model.generate(
+                    input_ids,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                    temperature=None,
+                    top_p=None,
+                )
+            gen_time = time.time() - t_gen
+
+            peak_vram = torch.cuda.max_memory_allocated(device) / (1024**3) if is_cuda else 0.0
+            mean_load    = sum(load_times) / len(load_times) if load_times else 0.0
+            mean_compute = sum(compute_times) / len(compute_times) if compute_times else 0.0
+
+            # Restore layers to CPU
+            model.model.layers = nn.ModuleList(layers)
+            for l in layers:
+                l.to("cpu")
+            model.model.embed_tokens.to("cpu")
+            model.model.norm.to("cpu")
+            model.lm_head.to("cpu")
+            if is_cuda:
+                torch.cuda.empty_cache()
+
+            run_metrics = RunMetrics(
+                run_id=f"adaptive_run_{run_i:02d}",
+                gen_time_s=gen_time,
+                mean_load_ms=mean_load,
+                mean_compute_ms=mean_compute,
+                peak_vram_gb=peak_vram,
+                prefetch_depth=depth,
+            )
+
+            # Decision Engine observes and adjusts
+            decision = self.decision_engine.observe_and_decide(run_metrics)
+
+            run_record = {
+                "run":           run_i,
+                "gen_time_s":    round(gen_time, 3),
+                "prefetch_depth": depth,
+                "new_depth":     decision["new_depth"],
+                "idle_ratio":    round(run_metrics.idle_ratio, 4),
+                "mean_load_ms":  round(mean_load, 3),
+                "mean_compute_ms": round(mean_compute, 3),
+                "peak_vram_gb":  round(peak_vram, 4),
+                "action":        decision["action"],
+                "rollback_fired": decision["rollback_fired"],
+                "reason":        decision["reason"],
+            }
+            run_records.append(run_record)
+            logger.info(
+                f"Run {run_i}: gen={gen_time:.2f}s | idle={run_metrics.idle_ratio:.1%} "
+                f"| depth {depth}→{decision['new_depth']} | {decision['action']}"
+            )
+
+        del model
+        if is_cuda:
+            torch.cuda.empty_cache()
+
+        logger.info(f"Adaptive loop complete. {n_runs} runs finished.")
+        return run_records
+

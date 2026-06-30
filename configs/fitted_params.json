@@ -1,0 +1,25 @@
+{
+  "_description": "Fitted stochastic performance model parameters from Phase 1 benchmarks (HAMR/GAMR).",
+  "_fitted_on": "TinyLlama-1.1B layers, RTX 3050 6GB Laptop, NVMe SSD",
+  "_units": "latency in ms/MB, bandwidth in GB/s",
+  "ssd_latency": {
+    "distribution": "lognormal",
+    "mu":    -0.54,
+    "sigma":  0.27,
+    "_note": "Fitted to SSD sequential read latency (ms/MB). lognormal(mu, sigma)."
+  },
+  "pcie_h2d": {
+    "model":        "linear",
+    "bandwidth_gbps": 6.8,
+    "_note": "CPU→GPU PCIe H2D bandwidth for RTX 3050 Laptop GPU. Measured as ~6.8 GB/s sustained."
+  },
+  "compute": {
+    "model":        "empirical",
+    "mean_ms_per_layer": 3.2,
+    "_note": "Mean GPU compute time per decoder layer (ms) — from Run_009 latency.csv."
+  },
+  "stall_threshold": {
+    "p_stall_target": 0.05,
+    "_note": "Target stall probability < 5%. Used by Phase 6 risk_model.py."
+  }
+}

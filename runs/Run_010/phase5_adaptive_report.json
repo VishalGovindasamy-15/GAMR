@@ -1,0 +1,55 @@
+{
+  "n_runs": 10,
+  "final_prefetch_depth": 1,
+  "depths_used": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "actions": [
+    "no_change",
+    "no_change",
+    "no_change",
+    "no_change",
+    "no_change",
+    "no_change",
+    "no_change",
+    "no_change",
+    "no_change",
+    "no_change"
+  ],
+  "rollback_count": 0,
+  "gen_times": [
+    5.418,
+    4.43,
+    4.487,
+    4.358,
+    4.347,
+    4.438,
+    4.374,
+    4.312,
+    4.376,
+    4.467
+  ],
+  "idle_ratios": [
+    0.2362,
+    0.3201,
+    0.3194,
+    0.3118,
+    0.3138,
+    0.3287,
+    0.3131,
+    0.3171,
+    0.3195,
+    0.3151
+  ],
+  "validation_passed": true,
+  "phase5_milestone": true
+}

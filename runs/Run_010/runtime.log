@@ -1,0 +1,45 @@
+2026-06-30T09:03:48 [gamr.hardware       ] INFO    Hardware scan complete — GPU: NVIDIA GeForce RTX 3050 6GB Laptop GPU | CUDA: True | VRAM: 6.0 GB | RAM: 15.3 GB
+2026-06-30T09:03:48 [gamr.hal.cuda       ] INFO    CUDABackend ready: NVIDIA GeForce RTX 3050 6GB Laptop GPU | VRAM 6.0 GB
+2026-06-30T09:03:48 [gamr.pool           ] INFO    RAMPool: budget=2.09 GB
+2026-06-30T09:03:48 [gamr.pool           ] INFO    VRAMPool: budget=4.52 GB
+2026-06-30T09:03:48 [gamr.recorder       ] INFO    Recorder initialised → runs/Run_010
+2026-06-30T09:03:48 [gamr.decision_engine] INFO    Loaded fitted params from configs/fitted_params.json
+2026-06-30T09:03:48 [gamr.controller     ] INFO    DecisionEngine initialised (adaptive mode).
+2026-06-30T09:03:48 [gamr.runtime        ] INFO    === Phase 5 Milestone: Adaptive Loop ===
+2026-06-30T09:03:48 [gamr.controller     ] INFO    === Adaptive loop: 10 runs, device=cuda:0 ===
+2026-06-30T09:03:48 [gamr.controller     ] INFO    Loading model to CPU RAM (adaptive loop)...
+2026-06-30T09:03:52 [gamr.controller     ] INFO    Model loaded in 3.7s
+2026-06-30T09:03:52 [gamr.controller     ] INFO    --- Run 1/10 | prefetch_depth=1 ---
+2026-06-30T09:03:57 [gamr.controller     ] INFO    Run 1: gen=5.42s | idle=23.6% | depth 1→1 | no_change
+2026-06-30T09:03:57 [gamr.controller     ] INFO    --- Run 2/10 | prefetch_depth=1 ---
+2026-06-30T09:04:02 [gamr.controller     ] INFO    Run 2: gen=4.43s | idle=32.0% | depth 1→1 | no_change
+2026-06-30T09:04:02 [gamr.controller     ] INFO    --- Run 3/10 | prefetch_depth=1 ---
+2026-06-30T09:04:06 [gamr.controller     ] INFO    Run 3: gen=4.49s | idle=31.9% | depth 1→1 | no_change
+2026-06-30T09:04:06 [gamr.controller     ] INFO    --- Run 4/10 | prefetch_depth=1 ---
+2026-06-30T09:04:11 [gamr.controller     ] INFO    Run 4: gen=4.36s | idle=31.2% | depth 1→1 | no_change
+2026-06-30T09:04:11 [gamr.controller     ] INFO    --- Run 5/10 | prefetch_depth=1 ---
+2026-06-30T09:04:15 [gamr.controller     ] INFO    Run 5: gen=4.35s | idle=31.4% | depth 1→1 | no_change
+2026-06-30T09:04:15 [gamr.controller     ] INFO    --- Run 6/10 | prefetch_depth=1 ---
+2026-06-30T09:04:20 [gamr.controller     ] INFO    Run 6: gen=4.44s | idle=32.9% | depth 1→1 | no_change
+2026-06-30T09:04:20 [gamr.controller     ] INFO    --- Run 7/10 | prefetch_depth=1 ---
+2026-06-30T09:04:24 [gamr.controller     ] INFO    Run 7: gen=4.37s | idle=31.3% | depth 1→1 | no_change
+2026-06-30T09:04:24 [gamr.controller     ] INFO    --- Run 8/10 | prefetch_depth=1 ---
+2026-06-30T09:04:29 [gamr.controller     ] INFO    Run 8: gen=4.31s | idle=31.7% | depth 1→1 | no_change
+2026-06-30T09:04:29 [gamr.controller     ] INFO    --- Run 9/10 | prefetch_depth=1 ---
+2026-06-30T09:04:33 [gamr.controller     ] INFO    Run 9: gen=4.38s | idle=32.0% | depth 1→1 | no_change
+2026-06-30T09:04:33 [gamr.controller     ] INFO    --- Run 10/10 | prefetch_depth=1 ---
+2026-06-30T09:04:38 [gamr.controller     ] INFO    Run 10: gen=4.47s | idle=31.5% | depth 1→1 | no_change
+2026-06-30T09:04:38 [gamr.controller     ] INFO    Adaptive loop complete. 10 runs finished.
+2026-06-30T09:04:38 [gamr.runtime        ] INFO    === Validating final output vs HF reference ===
+2026-06-30T09:04:38 [gamr.controller     ] INFO    Loading model to CPU RAM (SSD → RAM step)...
+2026-06-30T09:04:39 [gamr.controller     ] INFO    Model loaded to CPU in 0.9s
+2026-06-30T09:04:39 [gamr.controller     ] INFO    Prefetch inference: 22 layers, depth=1, device=cuda:0
+2026-06-30T09:04:47 [gamr.controller     ] INFO    Prefetch generation done in 8.62s | 42 tokens
+2026-06-30T09:04:47 [gamr.controller     ] INFO    Peak VRAM used: 0.420 GB
+2026-06-30T09:04:48 [gamr.validation     ] INFO    Running HF reference inference (full model on GPU)...
+2026-06-30T09:04:48 [gamr.validation     ] INFO    Reference done in 0.65s → 42 tokens
+2026-06-30T09:04:48 [gamr.validation     ] INFO    Validation: ✅ PASS
+  Prompt         : '<|system|>\nYou are a helpful assistant.<|user|>\nWhat is 2 + 2?<|assistant|>\n'
+  Reference time : 0.65s
+  GAMR time      : 8.62s
+2026-06-30T09:04:48 [gamr.recorder       ] INFO    Recorder closed and all files flushed.
